@@ -1,48 +1,47 @@
 module Gbank where
 
 import Text.Read
+import qualified Data.Map as Map
 
-data Account = Account { name :: String, balance :: Int } deriving Show
+type Name = String
+type Balance = Int
+type Accounts = Map.Map String Int
 
 main = do
   accounts <- setUp
-  putStrLn $ show accounts
   run accounts
 
-run :: [Account] -> IO ()
+run :: Accounts -> IO Accounts
 run as = do
-  _ <- takeTurn as 0
-  return ()
-
-takeTurn :: [Account] -> Int -> IO [Account]
-takeTurn as i = do
-  putStrLn . name $ as !! i 
-  _ <- getLine
-  return takeTurn next $ (take (i-1) as) ++ [Account "blah" 5] ++ (drop i as)
-    where next = i + 1 % 2
+  putStrLn $ show as
+  name <- getName
+  putStrLn "Delta:"
+  val <- getNumPlayers
+  let as' = Map.adjust (+val) name as
+  return as' >>= run
 
 -- Set up stuff -- 
-setUp :: IO [Account]
+setUp :: IO Accounts
 setUp = do
   putStrLn "Hi! Welcome to gbank. How many players will be playing today?"
   n <- getNumPlayers
-  getAccountList n
+  getAccounts n
  
-getAccountList :: Int -> IO [Account]
-getAccountList n = if n > 0
+getAccounts :: Int -> IO Accounts
+getAccounts n = if n > 0
   then do
-    account <- getAccount
-    others <- getAccountList (n-1)
-    return $ account : others
-  else return []
+    name <- getName
+    others <- getAccounts (n-1)
+    return $ Map.insert name 0 others
+  else return Map.empty
  
-getAccount :: IO Account
-getAccount = do
+getName :: IO Name
+getName = do
   putStrLn "Player name:"
   name <- getLine
   if null name
-    then putStrLn "Name cannot be empty" >> getAccount
-    else return $ Account name 0
+    then putStrLn "Name cannot be empty" >> getName
+    else return name
 
 getNumPlayers :: IO Int
 getNumPlayers = do
